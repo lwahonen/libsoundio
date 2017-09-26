@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.5)
-project(libsoundio C)
+set(CMAKE_USER_MAKE_RULES_OVERRIDE "CryptoppMakeRulesOverwrite.cmake")
+project(libsoundio CXX)
 set(CMAKE_MODULE_PATH ${libsoundio_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 if(CMAKE_VERSION VERSION_LESS 3.0.0)
@@ -205,11 +206,12 @@ if(MSVC)
     set(TEST_LDFLAGS " ")
     set(LIBM " ")
 else()
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Werror -pedantic")
-    set(LIB_CFLAGS "-std=c11 -fvisibility=hidden -Wall -Werror=strict-prototypes -Werror=old-style-definition -Werror=missing-prototypes -D_REENTRANT -D_POSIX_C_SOURCE=200809L -Wno-missing-braces")
-    set(EXAMPLE_CFLAGS "-std=c99 -Wall")
-    set(TEST_CFLAGS "${LIB_CFLAGS} -fprofile-arcs -ftest-coverage")
-    set(TEST_LDFLAGS "-fprofile-arcs -ftest-coverage")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wno-sign-compare")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=gnu++11 -Werror -pedantic -Wno-sign-compare")
+    set(LIB_CXXFLAGS "-std=gnu++11 -fvisibility=hidden -Wall -Werror=strict-prototypes -Werror=old-style-definition -Werror=missing-prototypes -D_REENTRANT -D_POSIX_C_SOURCE=200809L -Wno-missing-braces")
+    set(EXAMPLE_CXXFLAGS "-std=gnu++11 -Wall")
+    set(TEST_CXXFLAGS "${LIB_CFLAGS} -fprofile-arcs -ftest-coverage")
+    set(TEST_LDXXFLAGS "-fprofile-arcs -ftest-coverage")
     set(LIBM "m")
 endif()
 
@@ -229,8 +231,8 @@ if(BUILD_DYNAMIC_LIBS)
         OUTPUT_NAME soundio
         SOVERSION ${LIBSOUNDIO_VERSION_MAJOR}
         VERSION ${LIBSOUNDIO_VERSION}
-        COMPILE_FLAGS ${LIB_CFLAGS}
-        LINKER_LANGUAGE C
+        COMPILE_FLAGS ${LIB_CXXFLAGS}
+        LINKER_LANGUAGE CXX
     )
     target_link_libraries(libsoundio_shared LINK_PUBLIC ${LIBSOUNDIO_LIBS})
     install(TARGETS libsoundio_shared DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -240,8 +242,8 @@ if(BUILD_STATIC_LIBS)
     add_library(libsoundio_static STATIC ${LIBSOUNDIO_SOURCES})
     set_target_properties(libsoundio_static PROPERTIES
         OUTPUT_NAME ${SOUNDIO_STATIC_LIBNAME}
-        COMPILE_FLAGS ${LIB_CFLAGS}
-        LINKER_LANGUAGE C
+        COMPILE_FLAGS ${LIB_CXXFLAGS}
+        LINKER_LANGUAGE CXX
     )
     install(TARGETS libsoundio_static DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
@@ -255,8 +257,8 @@ install(FILES
 if(BUILD_EXAMPLE_PROGRAMS)
     add_executable(sio_sine example/sio_sine.c)
     set_target_properties(sio_sine PROPERTIES
-        LINKER_LANGUAGE C
-        COMPILE_FLAGS ${EXAMPLE_CFLAGS})
+        LINKER_LANGUAGE CXX
+        COMPILE_FLAGS ${EXAMPLE_CXXFLAGS})
     if(BUILD_DYNAMIC_LIBS)
         target_link_libraries(sio_sine libsoundio_shared ${LIBM})
     else()
@@ -266,8 +268,8 @@ if(BUILD_EXAMPLE_PROGRAMS)
 
     add_executable(sio_list_devices example/sio_list_devices.c)
     set_target_properties(sio_list_devices PROPERTIES
-        LINKER_LANGUAGE C
-        COMPILE_FLAGS ${EXAMPLE_CFLAGS})
+        LINKER_LANGUAGE CXX
+        COMPILE_FLAGS ${EXAMPLE_CXXFLAGS})
     if(BUILD_DYNAMIC_LIBS)
         target_link_libraries(sio_list_devices libsoundio_shared)
     else()
@@ -277,8 +279,8 @@ if(BUILD_EXAMPLE_PROGRAMS)
 
     add_executable(sio_microphone example/sio_microphone.c)
     set_target_properties(sio_microphone PROPERTIES
-        LINKER_LANGUAGE C
-        COMPILE_FLAGS ${EXAMPLE_CFLAGS})
+        LINKER_LANGUAGE CXX
+        COMPILE_FLAGS ${EXAMPLE_CXXFLAGS})
     if(BUILD_DYNAMIC_LIBS)
         target_link_libraries(sio_microphone libsoundio_shared)
     else()
@@ -288,8 +290,8 @@ if(BUILD_EXAMPLE_PROGRAMS)
 
     add_executable(sio_record example/sio_record.c)
     set_target_properties(sio_record PROPERTIES
-        LINKER_LANGUAGE C
-        COMPILE_FLAGS ${EXAMPLE_CFLAGS})
+        LINKER_LANGUAGE CXX
+        COMPILE_FLAGS ${EXAMPLE_CXXFLAGS})
     if(BUILD_DYNAMIC_LIBS)
         target_link_libraries(sio_record libsoundio_shared)
     else()
@@ -302,22 +304,22 @@ if(BUILD_TESTS)
     add_executable(unit_tests "${libsoundio_SOURCE_DIR}/test/unit_tests.c" ${LIBSOUNDIO_SOURCES})
     target_link_libraries(unit_tests LINK_PUBLIC ${LIBSOUNDIO_LIBS})
     set_target_properties(unit_tests PROPERTIES
-        LINKER_LANGUAGE C
-        COMPILE_FLAGS ${TEST_CFLAGS}
-        LINK_FLAGS ${TEST_LDFLAGS}
+        LINKER_LANGUAGE CXX
+        COMPILE_FLAGS ${TEST_CXXFLAGS}
+        LINK_FLAGS ${TEST_LDXXFLAGS}
     )
 
     add_executable(latency "${libsoundio_SOURCE_DIR}/test/latency.c" ${LIBSOUNDIO_SOURCES})
     target_link_libraries(latency LINK_PUBLIC ${LIBSOUNDIO_LIBS} ${LIBM})
     set_target_properties(latency PROPERTIES
-        LINKER_LANGUAGE C
-        COMPILE_FLAGS ${LIB_CFLAGS}
+        LINKER_LANGUAGE CXX
+        COMPILE_FLAGS ${LIB_CXXFLAGS}
     )
 
     add_executable(underflow test/underflow.c)
     set_target_properties(underflow PROPERTIES
-        LINKER_LANGUAGE C
-        COMPILE_FLAGS ${EXAMPLE_CFLAGS})
+        LINKER_LANGUAGE CXX
+        COMPILE_FLAGS ${EXAMPLE_CXXFLAGS})
     if(BUILD_DYNAMIC_LIBS)
         target_link_libraries(underflow libsoundio_shared ${LIBM})
     else()
@@ -326,8 +328,8 @@ if(BUILD_TESTS)
 
     add_executable(backend_disconnect_recover test/backend_disconnect_recover.c)
     set_target_properties(backend_disconnect_recover PROPERTIES
-        LINKER_LANGUAGE C
-        COMPILE_FLAGS ${EXAMPLE_CFLAGS})
+        LINKER_LANGUAGE CXX
+        COMPILE_FLAGS ${EXAMPLE_CXXFLAGS})
     if(BUILD_DYNAMIC_LIBS)
         target_link_libraries(backend_disconnect_recover libsoundio_shared)
     else()
@@ -336,8 +338,8 @@ if(BUILD_TESTS)
 
     add_executable(overflow test/overflow.c)
     set_target_properties(overflow PROPERTIES
-        LINKER_LANGUAGE C
-        COMPILE_FLAGS ${EXAMPLE_CFLAGS})
+        LINKER_LANGUAGE CXX
+        COMPILE_FLAGS ${EXAMPLE_CXXFLAGS})
     if(BUILD_DYNAMIC_LIBS)
         target_link_libraries(overflow libsoundio_shared)
     else()

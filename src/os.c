@@ -9,7 +9,9 @@
 #define _DARWIN_C_SOURCE
 #undef _POSIX_C_SOURCE
 #else
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #endif
 
 #include "os.h"

@@ -177,7 +177,7 @@ static void default_backend_disconnect_cb(struct SoundIo *soundio, int err) {
     soundio_panic("libsoundio: backend disconnected: %s", soundio_strerror(err));
 }
 
-static struct SoundIoAtomicFlag rtprio_seen = SOUNDIO_ATOMIC_FLAG_INIT;
+static struct SoundIoAtomicFlag rtprio_seen;
 static void default_emit_rtprio_warning(void) {
     if (!SOUNDIO_ATOMIC_FLAG_TEST_AND_SET(rtprio_seen)) {
         fprintf(stderr, "warning: unable to set high priority thread: Operation not permitted\n");

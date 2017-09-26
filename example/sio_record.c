@@ -53,7 +53,7 @@ static int min_int(int a, int b) {
 }
 
 static void read_callback(struct SoundIoInStream *instream, int frame_count_min, int frame_count_max) {
-    struct RecordContext *rc = instream->userdata;
+    struct RecordContext *rc = static_cast<RecordContext *>(instream->userdata);
     struct SoundIoChannelArea *areas;
     int err;
 

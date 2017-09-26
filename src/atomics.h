@@ -28,7 +28,7 @@ struct SoundIoAtomicBool {
 };
 
 struct SoundIoAtomicFlag {
-    std::atomic_flag x;
+    std::atomic_flag x{0};
 };
 
 #define SOUNDIO_ATOMIC_LOAD(a) (a.x.load())

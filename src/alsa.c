@@ -5,7 +5,9 @@
  * See http://opensource.org/licenses/MIT
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include "alsa.h"
 #include "soundio_private.h"
 
