@@ -43,6 +43,7 @@
 #define IID_IAUDIORENDERCLIENT                (IID_IAudioRenderClient)
 #define IID_IMMDEVICEENUMERATOR               (IID_IMMDeviceEnumerator)
 #define IID_IAUDIOCAPTURECLIENT               (IID_IAudioCaptureClient)
+#define IID_ISIMPLEAUDIOVOLUME                (IID_ISimpleAudioVolume)
 #define CLSID_MMDEVICEENUMERATOR              (CLSID_MMDeviceEnumerator)
 #define PKEY_DEVICE_FRIENDLYNAME              (PKEY_Device_FriendlyName)
 #define PKEY_AUDIOENGINE_DEVICEFORMAT         (PKEY_AudioEngine_DeviceFormat)
@@ -85,6 +86,10 @@ static const IID IID_IAudioCaptureClient = {
     //MIDL_INTERFACE("C8ADBD64-E71E-48a0-A4DE-185C395CD317")
     0xc8adbd64, 0xe71e, 0x48a0, {0xa4, 0xde, 0x18, 0x5c, 0x39, 0x5c, 0xd3, 0x17}
 };
+static const IID IID_ISimpleAudioVolume = {
+    //MIDL_INTERFACE("87ce5498-68d6-44e5-9215-6da47ef883d8")
+    0x87ce5498, 0x68d6, 0x44e5,{ 0x92, 0x15, 0x6d, 0xa4, 0x7e, 0xf8, 0x83, 0xd8 }
+};
 
 #else
 #define IS_EQUAL_GUID(a, b) IsEqualGUID((a), (b))
@@ -100,6 +105,7 @@ static const IID IID_IAudioCaptureClient = {
 #define IID_IAUDIORENDERCLIENT (&IID_IAudioRenderClient)
 #define IID_IMMDEVICEENUMERATOR (&IID_IMMDeviceEnumerator)
 #define IID_IAUDIOCAPTURECLIENT (&IID_IAudioCaptureClient)
+#define IID_ISIMPLEAUDIOVOLUME (&IID_ISimpleAudioVolume)
 #endif
 
 // Attempting to use the Windows-supplied versions of these constants resulted
@@ -1262,11 +1268,11 @@ static int outstream_do_open(struct SoundIoPrivate *si, struct SoundIoOutStreamP
         if (FAILED(hr = IAudioClient_GetMixFormat(osw->audio_client, (WAVEFORMATEX **)&mix_format))) {
             return SoundIoErrorOpeningDevice;
         }
-        wave_format.Format.nSamplesPerSec = mix_format->Format.nSamplesPerSec;
+        wave_format.Format.nSamplesPerSec = (DWORD)outstream->sample_rate;
+        osw->need_resample = (mix_format->Format.nSamplesPerSec != wave_format.Format.nSamplesPerSec);
         CoTaskMemFree(mix_format);
         mix_format = NULL;
-        osw->need_resample = (wave_format.Format.nSamplesPerSec != (DWORD)outstream->sample_rate);
-        flags = osw->need_resample ? AUDCLNT_STREAMFLAGS_RATEADJUST : 0;
+        flags = osw->need_resample ? AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY : 0;
         share_mode = AUDCLNT_SHAREMODE_SHARED;
         periodicity = 0;
         buffer_duration = to_reference_time(4.0);
@@ -1294,11 +1300,11 @@ static int outstream_do_open(struct SoundIoPrivate *si, struct SoundIoOutStreamP
                 if (FAILED(hr = IAudioClient_GetMixFormat(osw->audio_client, (WAVEFORMATEX **)&mix_format))) {
                     return SoundIoErrorOpeningDevice;
                 }
-                wave_format.Format.nSamplesPerSec = mix_format->Format.nSamplesPerSec;
+                wave_format.Format.nSamplesPerSec = (DWORD)outstream->sample_rate;
+                osw->need_resample = (mix_format->Format.nSamplesPerSec != wave_format.Format.nSamplesPerSec);
                 CoTaskMemFree(mix_format);
                 mix_format = NULL;
-                osw->need_resample = (wave_format.Format.nSamplesPerSec != (DWORD)outstream->sample_rate);
-                flags = osw->need_resample ? AUDCLNT_STREAMFLAGS_RATEADJUST : 0;
+                flags = osw->need_resample ? AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY : 0;
                 to_wave_format_layout(&outstream->layout, &wave_format);
                 to_wave_format_format(outstream->format, &wave_format);
                 complete_wave_format_data(&wave_format);
@@ -1343,17 +1349,6 @@ static int outstream_do_open(struct SoundIoPrivate *si, struct SoundIoOutStreamP
         if (FAILED(hr = IAudioClient_SetEventHandle(osw->audio_client, osw->h_event))) {
             return SoundIoErrorOpeningDevice;
         }
-    } else if (osw->need_resample) {
-        if (FAILED(hr = IAudioClient_GetService(osw->audio_client, IID_IAUDIOCLOCKADJUSTMENT,
-                        (void**)&osw->audio_clock_adjustment)))
-        {
-            return SoundIoErrorOpeningDevice;
-        }
-        if (FAILED(hr = IAudioClockAdjustment_SetSampleRate(osw->audio_clock_adjustment,
-                        outstream->sample_rate)))
-        {
-            return SoundIoErrorOpeningDevice;
-        }
     }
 
     if (outstream->name) {
@@ -1380,13 +1375,13 @@ static int outstream_do_open(struct SoundIoPrivate *si, struct SoundIoOutStreamP
         return SoundIoErrorOpeningDevice;
     }
 
-    if (FAILED(hr = IAudioClient_GetService(osw->audio_client, IID_ISimpleAudioVolume,
+    if (FAILED(hr = IAudioClient_GetService(osw->audio_client, IID_ISIMPLEAUDIOVOLUME,
                     (void **)&osw->audio_volume_control)))
     {
         return SoundIoErrorOpeningDevice;
     }
 
-    if (FAILED(hr = osw->audio_volume_control->GetMasterVolume(&volume)))
+    if (FAILED(hr = osw->audio_volume_control->lpVtbl->GetMasterVolume(osw->audio_volume_control, &outstream->volume)))
     {
         return SoundIoErrorOpeningDevice;
     }
@@ -1725,7 +1720,7 @@ static int outstream_set_volume_wasapi(struct SoundIoPrivate *si, struct SoundIo
     struct SoundIoOutStreamWasapi *osw = &os->backend_data.wasapi;
 
     HRESULT hr;
-    if (FAILED(hr = osw->audio_volume_control->SetMasterVolume(&volume)))
+    if (FAILED(hr = osw->audio_volume_control->lpVtbl->SetMasterVolume(osw->audio_volume_control, volume, NULL)))
     {
         return SoundIoErrorIncompatibleDevice;
     }
