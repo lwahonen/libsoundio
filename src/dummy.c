@@ -8,8 +8,8 @@
 #include "dummy.h"
 #include "soundio_private.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio> 
+#include <cstring>
 
 static void playback_thread_run(void *arg) {
     struct SoundIoOutStreamPrivate *os = (struct SoundIoOutStreamPrivate *)arg;

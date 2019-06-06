@@ -5,8 +5,9 @@
  * See http://opensource.org/licenses/MIT
  */
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio> 
+#include <cstring>
 #include <stdarg.h>
 
 #include "util.h"

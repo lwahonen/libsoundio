@@ -9,7 +9,9 @@
 #include "soundio_private.h"
 #include "util.h"
 
-#include <stdlib.h>
+#include <cstdlib>
+#include <cstdio> 
+#include <cstring>
 
 struct SoundIoRingBuffer *soundio_ring_buffer_create(struct SoundIo *soundio, int requested_capacity) {
     struct SoundIoRingBuffer *rb = ALLOCATE(struct SoundIoRingBuffer, 1);

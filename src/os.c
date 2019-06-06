@@ -17,13 +17,9 @@
 #include "os.h"
 #include "soundio_internal.h"
 #include "util.h"
-
-#include <stdlib.h>
-#include <time.h>
-#include <assert.h>
-#include <string.h>
-#include <errno.h>
-
+ 
+#include <cstdio> 
+#include <cstring>
 #if defined(_WIN32)
 #define SOUNDIO_OS_WINDOWS
 

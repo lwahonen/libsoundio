@@ -5,9 +5,10 @@
  * See http://opensource.org/licenses/MIT
  */
 
+
 #include "soundio_private.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 static struct SoundIoChannelLayout builtin_channel_layouts[] = {
     {
