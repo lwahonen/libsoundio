@@ -972,14 +972,30 @@ static int refresh_devices(struct SoundIoPrivate *si) {
             rd.device_raw = NULL;
             continue;
         }
-        WAVEFORMATEXTENSIBLE *valid_wave_format = (WAVEFORMATEXTENSIBLE *)rd.prop_variant_value.blob.pBlobData;
-        if (valid_wave_format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE) {
+        WAVEFORMATEX *valid_wave_format_temp = (WAVEFORMATEX *)rd.prop_variant_value.blob.pBlobData;
+        if (valid_wave_format_temp->wFormatTag != WAVE_FORMAT_EXTENSIBLE && valid_wave_format_temp->wFormatTag != WAVE_FORMAT_PCM) {
             rd.device_shared->probe_error = SoundIoErrorOpeningDevice;
             rd.device_raw->probe_error = SoundIoErrorOpeningDevice;
             rd.device_shared = NULL;
             rd.device_raw = NULL;
             continue;
         }
+		WAVEFORMATEXTENSIBLE * valid_wave_format = nullptr;
+		if(valid_wave_format_temp->wFormatTag == WAVE_FORMAT_EXTENSIBLE)
+			valid_wave_format = (WAVEFORMATEXTENSIBLE *)rd.prop_variant_value.blob.pBlobData;
+		else
+		{
+			valid_wave_format = (WAVEFORMATEXTENSIBLE*)calloc(1, sizeof(WAVEFORMATEXTENSIBLE));
+			valid_wave_format->Format = *valid_wave_format_temp;
+			if(valid_wave_format_temp->nChannels == 1)
+				valid_wave_format->dwChannelMask = KSAUDIO_SPEAKER_MONO;
+			if (valid_wave_format_temp->nChannels == 2)
+				valid_wave_format->dwChannelMask = KSAUDIO_SPEAKER_STEREO;
+			valid_wave_format->SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+			valid_wave_format->Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+			valid_wave_format->Format.cbSize = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
+			valid_wave_format->Samples.wValidBitsPerSample = valid_wave_format_temp->wBitsPerSample;
+		}
         if ((err = detect_valid_sample_rates(&rd, valid_wave_format, dev_raw,
                         AUDCLNT_SHAREMODE_EXCLUSIVE)))
         {
@@ -1008,7 +1024,36 @@ static int refresh_devices(struct SoundIoPrivate *si) {
             rd.device_shared->probe_error = SoundIoErrorOpeningDevice;
             rd.device_shared = NULL;
         }
-        else if(rd.wave_format && (rd.wave_format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE)) {
+		if (rd.wave_format->Format.wFormatTag == WAVE_FORMAT_PCM)
+		{
+			valid_wave_format = (WAVEFORMATEXTENSIBLE*)CoTaskMemAlloc(sizeof(WAVEFORMATEXTENSIBLE));
+			valid_wave_format->Format = rd.wave_format->Format;
+			if (valid_wave_format_temp->nChannels == 1)
+				valid_wave_format->dwChannelMask = KSAUDIO_SPEAKER_MONO;
+			if (valid_wave_format_temp->nChannels == 2)
+				valid_wave_format->dwChannelMask = KSAUDIO_SPEAKER_STEREO;
+			valid_wave_format->SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+			valid_wave_format->Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+			valid_wave_format->Format.cbSize = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
+			valid_wave_format->Samples.wValidBitsPerSample = valid_wave_format_temp->wBitsPerSample;
+			rd.wave_format = valid_wave_format;
+		}
+		if (rd.wave_format->Format.wFormatTag == WAVE_FORMAT_IEEE_FLOAT)
+		{
+			valid_wave_format = (WAVEFORMATEXTENSIBLE*)CoTaskMemAlloc(sizeof(WAVEFORMATEXTENSIBLE));
+			valid_wave_format->Format = rd.wave_format->Format;
+			if (valid_wave_format_temp->nChannels == 1)
+				valid_wave_format->dwChannelMask = KSAUDIO_SPEAKER_MONO;
+			if (valid_wave_format_temp->nChannels == 2)
+				valid_wave_format->dwChannelMask = KSAUDIO_SPEAKER_STEREO;
+			valid_wave_format->SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+			valid_wave_format->Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+			valid_wave_format->Format.cbSize = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
+			valid_wave_format->Samples.wValidBitsPerSample = valid_wave_format_temp->wBitsPerSample;
+			rd.wave_format = valid_wave_format;
+		}
+
+        if(rd.wave_format && (rd.wave_format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE)) {
             rd.device_shared->probe_error = SoundIoErrorOpeningDevice;
             rd.device_shared = NULL;
         }
