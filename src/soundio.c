@@ -794,8 +794,6 @@ bool soundio_device_supports_layout(struct SoundIoDevice *device,
 }
 
 bool soundio_device_supports_sample_rate(struct SoundIoDevice *device, int sample_rate) {
-	if (!device->is_raw)
-		return true;
     for (int i = 0; i < device->sample_rate_count; i += 1) {
         struct SoundIoSampleRateRange *range = &device->sample_rates[i];
         if (sample_rate >= range->min && sample_rate <= range->max)
