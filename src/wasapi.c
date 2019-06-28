@@ -1844,17 +1844,8 @@ static int instream_do_open(struct SoundIoPrivate *si, struct SoundIoInStreamPri
         periodicity = to_reference_time(dw->period_duration);
         buffer_duration = periodicity;
     } else {
-        WAVEFORMATEXTENSIBLE *mix_format;
-        if (FAILED(hr = IAudioClient_GetMixFormat(isw->audio_client, (WAVEFORMATEX **)&mix_format))) {
-            return SoundIoErrorOpeningDevice;
-        }
-        wave_format.Format.nSamplesPerSec = mix_format->Format.nSamplesPerSec;
-        CoTaskMemFree(mix_format);
-        mix_format = NULL;
-        if (wave_format.Format.nSamplesPerSec != (DWORD)instream->sample_rate) {
-            return SoundIoErrorIncompatibleDevice;
-        }
-        flags = 0;
+		wave_format.Format.nSamplesPerSec = instream->sample_rate;
+		flags = AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM;
         share_mode = AUDCLNT_SHAREMODE_SHARED;
         periodicity = 0;
         buffer_duration = to_reference_time(4.0);
