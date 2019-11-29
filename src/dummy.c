@@ -56,7 +56,7 @@ static void playback_thread_run(void *arg) {
         int free_frames = free_bytes / outstream->bytes_per_frame;
 
         double total_time = soundio_os_get_time() - start_time;
-        long total_frames = total_time * outstream->sample_rate;
+        long total_frames = (long)(total_time * outstream->sample_rate);
         int frames_to_kill = total_frames - frames_consumed;
         int read_count = soundio_int_min(frames_to_kill, fill_frames);
         int byte_count = read_count * outstream->bytes_per_frame;
@@ -104,7 +104,7 @@ static void capture_thread_run(void *arg) {
         int free_frames = free_bytes / instream->bytes_per_frame;
 
         double total_time = soundio_os_get_time() - start_time;
-        long total_frames = total_time * instream->sample_rate;
+		long total_frames = (long)(total_time * instream->sample_rate);
         int frames_to_kill = total_frames - frames_consumed;
         int write_count = soundio_int_min(frames_to_kill, free_frames);
         int byte_count = write_count * instream->bytes_per_frame;
@@ -188,7 +188,7 @@ static int outstream_open_dummy(struct SoundIoPrivate *si, struct SoundIoOutStre
     osd->period_duration = outstream->software_latency / 2.0;
 
     int err;
-    int buffer_size = outstream->bytes_per_frame * outstream->sample_rate * outstream->software_latency;
+	int buffer_size = (int)(outstream->bytes_per_frame * outstream->sample_rate * outstream->software_latency);
     if ((err = soundio_ring_buffer_init(&osd->ring_buffer, buffer_size))) {
         outstream_destroy_dummy(si, os);
         return err;
@@ -303,7 +303,7 @@ static int instream_open_dummy(struct SoundIoPrivate *si, struct SoundIoInStream
     double target_buffer_duration = isd->period_duration * 4.0;
 
     int err;
-    int buffer_size = instream->bytes_per_frame * instream->sample_rate * target_buffer_duration;
+	int buffer_size = (int)(instream->bytes_per_frame * instream->sample_rate * target_buffer_duration);
     if ((err = soundio_ring_buffer_init(&isd->ring_buffer, buffer_size))) {
         instream_destroy_dummy(si, is);
         return err;
@@ -462,8 +462,8 @@ int soundio_dummy_init(struct SoundIoPrivate *si) {
 
         device->ref_count = 1;
         device->soundio = soundio;
-        device->id = strdup("dummy-out");
-        device->name = strdup("Dummy Output Device");
+        device->id = _strdup("dummy-out");
+        device->name = _strdup("Dummy Output Device");
         if (!device->id || !device->name) {
             soundio_device_unref(device);
             destroy_dummy(si);
@@ -508,8 +508,8 @@ int soundio_dummy_init(struct SoundIoPrivate *si) {
 
         device->ref_count = 1;
         device->soundio = soundio;
-        device->id = strdup("dummy-in");
-        device->name = strdup("Dummy Input Device");
+        device->id = _strdup("dummy-in");
+        device->name = _strdup("Dummy Input Device");
         if (!device->id || !device->name) {
             soundio_device_unref(device);
             destroy_dummy(si);

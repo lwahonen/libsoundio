@@ -35,10 +35,6 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#if !defined(UNICODE)
-#define UNICODE
-#endif
-
 // require Windows 7 or later
 #if WINVER < 0x0601
 #undef WINVER
@@ -448,7 +444,7 @@ void soundio_os_cond_timed_wait(struct SoundIoOsCond *cond,
         target_cs = &cond->default_cs_id;
         EnterCriticalSection(&cond->default_cs_id);
     }
-    DWORD ms = seconds * 1000.0;
+	DWORD ms = (int)(seconds * 1000.0);
     SleepConditionVariableCS(&cond->id, target_cs, ms);
     if (!locked_mutex)
         LeaveCriticalSection(&cond->default_cs_id);
@@ -608,8 +604,8 @@ int soundio_os_page_size(void) {
 }
 
 static inline size_t ceil_dbl_to_size_t(double x) {
-    const double truncation = (size_t)x;
-    return truncation + (truncation < x);
+	const double truncation = (double)((size_t)x);
+	return (size_t)(truncation + (truncation < x));
 }
 
 int soundio_os_init_mirrored_memory(struct SoundIoOsMirroredMemory *mem, size_t requested_capacity) {
@@ -617,7 +613,7 @@ int soundio_os_init_mirrored_memory(struct SoundIoOsMirroredMemory *mem, size_t 
 
 #if defined(SOUNDIO_OS_WINDOWS)
     BOOL ok;
-    HANDLE hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, actual_capacity * 2, NULL);
+    HANDLE hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, (DWORD)actual_capacity * 2, NULL);
     if (!hMapFile)
         return SoundIoErrorNoMem;
 
