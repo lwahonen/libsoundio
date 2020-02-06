@@ -90,7 +90,7 @@ int soundio_ring_buffer_init(struct SoundIoRingBuffer *rb, int requested_capacit
         return err;
     SOUNDIO_ATOMIC_STORE(rb->write_offset, 0);
     SOUNDIO_ATOMIC_STORE(rb->read_offset, 0);
-    rb->capacity = rb->mem.capacity;
+    rb->capacity = (int)(rb->mem.capacity);
 
     return 0;
 }
